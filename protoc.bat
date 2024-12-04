@@ -1,0 +1,5 @@
+D:/lib/protoc-3.19.4-win64/bin/protoc.exe -I E:/MyProjects/protobuf_demo_windows/protos --cpp_out=E:/MyProjects/protobuf_demo_windows/include E:/MyProjects/protobuf_demo_windows/protos/addressbook.proto
+D:/lib/protoc-3.19.4-win64/bin/protoc.exe -I E:/MyProjects/protobuf_demo_windows/protos --cpp_out=E:/MyProjects/protobuf_demo_windows/include E:/MyProjects/protobuf_demo_windows/protos/contact.proto
+D:/lib/protoc-3.19.4-win64/bin/protoc.exe -I E:/MyProjects/protobuf_demo_windows/protos --cpp_out=E:/MyProjects/protobuf_demo_windows/include E:/MyProjects/protobuf_demo_windows/protos/item.proto
+D:/lib/protoc-3.19.4-win64/bin/protoc.exe -I E:/MyProjects/protobuf_demo_windows/protos --cpp_out=E:/MyProjects/protobuf_demo_windows/include E:/MyProjects/protobuf_demo_windows/protos/person.proto
+D:/lib/protoc-3.19.4-win64/bin/protoc.exe -I E:/MyProjects/protobuf_demo_windows/protos --cpp_out=E:/MyProjects/protobuf_demo_windows/include E:/MyProjects/protobuf_demo_windows/protos/phonebook.proto

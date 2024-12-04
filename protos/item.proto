@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message Item {
+  enum ItemType {
+    UNKNOWN = 0;
+    BOOK = 1;
+    ELECTRONIC = 2;
+  }
+  string name = 1;
+  ItemType type = 2;
+}

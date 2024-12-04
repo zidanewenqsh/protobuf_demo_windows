@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message Contact {
+  oneof contact_type {
+    string email = 1;
+    string phone = 2;
+  }
+}
