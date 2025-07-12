@@ -1,89 +1,73 @@
 cmake_minimum_required(VERSION 3.10)
-project(YourProjectName)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(ProtobufDemo)
 
 # 设置 C++ 标准
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 设置编译器警告标志
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # MSVC 编译器
-    add_compile_options(/W4 /WX)  # 使用 MSVC 的警告等级 4 和将警告视为错误
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # GCC 或 Clang 编译器
-    add_compile_options(-Wall -Wextra -g)
+# 使用静态运行时库
+if(MSVC)
+    foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+        if(${flag_var} MATCHES "/MD")
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif()
+    endforeach()
+    
+    # 在Release模式下添加调试信息
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 endif()
 
-# 设置源代码和头文件目录
-set(SRC_DIR src)
-set(INCLUDE_DIR include)
-set(PROTOS_DIR protos)
+# 直接指定 Protobuf 路径
+set(PROTOBUF_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf-3.6.1/include")
+set(PROTOBUF_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf-3.6.1/lib")
+set(PROTOBUF_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(PROTOBUF_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/demo")
 
-# 手动指定 protoc.exe 路径（假设你已经安装了 protobuf，并知道 protoc 的路径）
-set(PROTOC_PATH "D:/lib/protoc-3.19.4-win64/bin/protoc.exe")  # 替换为 protoc.exe 的实际路径
+# 输出路径信息
+message(STATUS "Protobuf include dir: ${PROTOBUF_INCLUDE_DIR}")
+message(STATUS "Protobuf library dir: ${PROTOBUF_LIB_DIR}")
+message(STATUS "Protobuf generated dir: ${PROTOBUF_GENERATED_DIR}")
+message(STATUS "Protobuf source dir: ${PROTOBUF_SRC_DIR}")
 
-# 设置 protobuf 输出目录（生成的头文件和源文件）
-set(PROTOBUF_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/include)
-file(MAKE_DIRECTORY ${PROTOBUF_OUTPUT_DIR})
+# 包含 Protobuf 头文件目录
+include_directories(${PROTOBUF_INCLUDE_DIR})
+include_directories(${PROTOBUF_GENERATED_DIR})
 
-# 包含 protobuf 头文件目录
-include_directories(${INCLUDE_DIR})
-include_directories("D:/lib/protoc-3.19.4-win64/include")
-
-# 查找 .proto 文件
-file(GLOB PROTO_FILES "${PROTOS_DIR}/*.proto")
-
-# 添加所有的源文件
-file(GLOB CPP_FILES "${SRC_DIR}/*.cpp")
-
-# 为每个源文件和对应的 .proto 文件创建可执行目标
-foreach(CPP_FILE ${CPP_FILES})
-    # 获取可执行文件名称
-    get_filename_component(EXECUTABLE_NAME ${CPP_FILE} NAME_WE)
-
-    # 获取对应的 .proto 文件路径
-    set(PROTO_FILE "${CMAKE_SOURCE_DIR}/${PROTOS_DIR}/${EXECUTABLE_NAME}.proto")
-
-    if(EXISTS ${PROTO_FILE})
-        # message(STATUS "Found .proto file: ${PROTO_FILE}")
-        # message(STATUS "PROTOC_PATH: ${PROTOC_PATH}")
-        # 手动调用 protoc 命令生成 .pb.cc 和 .pb.h 文件
-        add_custom_command(
-            OUTPUT "${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.cc"
-                   "${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.h"
-            COMMAND ${PROTOC_PATH}
-                    -I "${CMAKE_SOURCE_DIR}/${PROTOS_DIR}"
-                    --cpp_out=${PROTOBUF_OUTPUT_DIR}
-                    ${PROTO_FILE}
-            DEPENDS ${PROTO_FILE}
-            COMMENT "Generating C++ files from ${PROTO_FILE}"
+# 设置MSVC特定选项的宏
+macro(set_msvc_options target_name)
+    if(MSVC)
+        # 禁用一些警告
+        target_compile_options(${target_name} PRIVATE 
+            /wd4251 # 'identifier' : class 'type' needs to have dll-interface
+            /wd4996 # 'function': was declared deprecated
         )
-        # message(STATUS "Running protoc with command: ${PROTOC_PATH} -I ${CMAKE_SOURCE_DIR}/${PROTOS_DIR} --cpp_out=${PROTOBUF_OUTPUT_DIR} ${PROTO_FILE}")
-        message(STATUS "${PROTOC_PATH} -I ${CMAKE_SOURCE_DIR}/${PROTOS_DIR} --cpp_out=${PROTOBUF_OUTPUT_DIR} ${PROTO_FILE}")
-
-        # 输出生成的文件列表
-        # message(STATUS "Generated files: ${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.cc, ${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.h")
-
-        # 将生成的文件加入到目标
-        file(GLOB PROTO_GEN_SRCS "${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.cc")
-        file(GLOB PROTO_GEN_HDRS "${PROTOBUF_OUTPUT_DIR}/${EXECUTABLE_NAME}.pb.h")
-
-        add_executable(${EXECUTABLE_NAME} ${CPP_FILE} ${PROTO_GEN_SRCS} ${PROTO_GEN_HDRS})
-    else()
-        # 如果没有对应的 .proto 文件，仅构建源文件
-        add_executable(${EXECUTABLE_NAME} ${CPP_FILE})
     endif()
+endmacro()
 
-    # 链接库和头文件目录
-    target_include_directories(${EXECUTABLE_NAME} PRIVATE ${INCLUDE_DIR})
-    # 如果 protobuf 库需要链接（如果你使用了 protobuf 库）
-    target_link_libraries(${EXECUTABLE_NAME} ${Protobuf_LIBRARIES})
-endforeach()
+# 创建可执行文件的宏
+macro(add_proto_executable name)
+    add_executable(${name}_demo 
+        ${PROTOBUF_SRC_DIR}/${name}.cpp
+        ${PROTOBUF_SRC_DIR}/${name}.pb.cc
+        ${PROTOBUF_GENERATED_DIR}/${name}.pb.h
+    )
+    
+    # 添加库搜索路径
+    target_link_libraries(${name}_demo "${PROTOBUF_LIB_DIR}/libprotobuf.lib")
+    
+    # 设置MSVC特定选项
+    set_msvc_options(${name}_demo)
+endmacro()
 
-# 添加清理目标
-add_custom_target(clean-all
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROTOBUF_OUTPUT_DIR}
-    COMMAND ${CMAKE_COMMAND} -P clean-all.cmake
-)
+# 添加五个可执行文件
+add_proto_executable(addressbook)
+add_proto_executable(contact)
+add_proto_executable(item)
+add_proto_executable(person)
+add_proto_executable(phonebook) 
