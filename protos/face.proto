@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package face;
+
+// 人脸检测框
+message FaceBox {
+  float x = 1;        // 左上角x坐标
+  float y = 2;        // 左上角y坐标
+  float width = 3;    // 宽度
+  float height = 4;   // 高度
+  float score = 5;    // 检测置信度
+}
+
+// 2D坐标点
+message Point2D {
+  float x = 1;
+  float y = 2;
+}
+
+// 5个关键点（左眼、右眼、鼻尖、左嘴角、右嘴角）
+message FaceKeypoints5 {
+  Point2D left_eye = 1;      // 左眼
+  Point2D right_eye = 2;     // 右眼
+  Point2D nose_tip = 3;      // 鼻尖
+  Point2D mouth_left = 4;    // 左嘴角
+  Point2D mouth_right = 5;   // 右嘴角
+}
+
+// 106个关键点
+message FaceKeypoints106 {
+  repeated Point2D points = 1;  // 106个关键点坐标
+}
+
+// 人脸姿态（欧拉角）
+message FacePose {
+  float pitch = 1;  // 俯仰角（上下点头）
+  float yaw = 2;    // 偏航角（左右摇头）
+  float roll = 3;   // 滚转角（头部倾斜）
+}
+
+// 人脸属性
+message FaceAttributes {
+  float age = 1;                // 年龄
+  enum Gender {
+    UNKNOWN = 0;
+    MALE = 1;
+    FEMALE = 2;
+  }
+  Gender gender = 2;            // 性别
+}
+
+// 人脸特征
+message FaceFeature {
+  repeated float vector = 1;    // 人脸特征向量（256维）
+  string model_version = 2;     // 模型版本
+}
+
+// 人脸识别结果
+message FaceRecognitionResult {
+  string face_id = 1;           // 人脸ID
+  float similarity = 3;         // 相似度
+}
+
+// 完整的人脸信息
+message Face {
+  string image_id = 1;          // 图像ID
+  int32 face_index = 2;         // 在图像中的索引
+  FaceBox box = 3;              // 人脸框
+  FaceKeypoints5 keypoints5 = 4;    // 5个关键点
+  FaceKeypoints106 keypoints106 = 5; // 106个关键点
+  FacePose pose = 6;            // 人脸姿态
+  FaceAttributes attributes = 7; // 人脸属性
+  FaceFeature feature = 8;      // 人脸特征
+  FaceRecognitionResult recognition = 9; // 识别结果
+  int64 timestamp = 10;         // 时间戳
+}
+
+// 人脸数据库中的人脸记录
+message FaceRecord {
+  string face_id = 1;           // 人脸ID
+  string person_id = 2;         // 人物ID
+  string name = 3;              // 人物姓名
+  FaceFeature feature = 4;      // 人脸特征
+  bytes face_image = 5;         // 人脸图像数据（可选）
+  int64 create_time = 6;        // 创建时间
+  int64 update_time = 7;        // 更新时间
+}
+
+// 人脸检测请求
+message FaceDetectionRequest {
+  bytes image = 1;              // 图像数据
+  bool extract_keypoints5 = 2;  // 是否提取5个关键点
+  bool extract_keypoints106 = 3; // 是否提取106个关键点
+  bool extract_attributes = 4;  // 是否提取属性
+  bool extract_feature = 5;     // 是否提取特征
+}
+
+// 人脸检测响应
+message FaceDetectionResponse {
+  repeated Face faces = 1;      // 检测到的人脸
+  int32 error_code = 2;         // 错误码
+  string error_msg = 3;         // 错误信息
+}
+
+// 人脸识别请求
+message FaceRecognitionRequest {
+  FaceFeature feature = 1;      // 待识别的人脸特征
+  int32 top_n = 2;              // 返回相似度最高的N个结果
+  float threshold = 3;          // 相似度阈值
+}
+
+// 人脸识别响应
+message FaceRecognitionResponse {
+  repeated FaceRecognitionResult results = 1; // 识别结果
+  int32 error_code = 2;         // 错误码
+  string error_msg = 3;         // 错误信息
+}
+
+// 人脸服务
+service FaceService {
+  // 人脸检测与特征提取
+  rpc DetectFace(FaceDetectionRequest) returns (FaceDetectionResponse) {}
+  
+  // 人脸识别
+  rpc RecognizeFace(FaceRecognitionRequest) returns (FaceRecognitionResponse) {}
+  
+  // 人脸注册
+  rpc RegisterFace(FaceRecord) returns (FaceRecord) {}
+  
+  // 删除人脸
+  rpc DeleteFace(FaceRecord) returns (FaceRecord) {}
+} 
